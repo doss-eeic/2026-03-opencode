@@ -66,6 +66,8 @@ import { legacySessionHref, legacySessionServer, requireServerKey, sessionHref }
 import { createSessionLineage } from "@/pages/session/session-lineage"
 
 import { SessionPage, SessionRouteErrorBoundary, TargetSessionRouteContent } from "@/pages/session"
+import { SingleSessionShell } from "@/pages/single-session"
+import { useSingleSession } from "@/context/ui-mode"
 import { NewHome } from "@/pages/home"
 import { LegacyHome } from "@/pages/home/legacy-home"
 
@@ -368,6 +370,16 @@ function LegacyServerScopedShell(props: ServerScopedShellProps) {
   )
 }
 
+function SingleSessionLayout(props: ParentProps<{ serverScoped?: JSX.Element }>) {
+  return (
+    <SelectedServerProviders>
+      <ServerScopedProviders serverScoped={props.serverScoped}>
+        <SingleSessionShell>{props.children}</SingleSessionShell>
+      </ServerScopedProviders>
+    </SelectedServerProviders>
+  )
+}
+
 function NewAppLayout(props: ParentProps<{ serverScoped?: JSX.Element }>) {
   return (
     <SelectedServerProviders>
@@ -593,7 +605,10 @@ export function AppInterface(props: {
                     <PermissionProvider>
                       <NotificationProvider>
                         <ServerShell>
-                          <Show when={useSettings().general.newLayoutDesigns()} fallback={routerProps.children}>
+                          <Show
+                            when={!useSingleSession() && useSettings().general.newLayoutDesigns()}
+                            fallback={routerProps.children}
+                          >
                             <NewAppLayout serverScoped={props.serverScoped}>{routerProps.children}</NewAppLayout>
                           </Show>
                         </ServerShell>
@@ -614,6 +629,17 @@ export function AppInterface(props: {
 
 function Routes(props: { serverScoped?: JSX.Element }) {
   const settings = useSettings()
+  if (useSingleSession())
+    return (
+      <Route
+        component={(routeProps) => (
+          <SingleSessionLayout serverScoped={props.serverScoped}>{routeProps.children}</SingleSessionLayout>
+        )}
+      >
+        <Route path="/server/:serverKey/session/:id" component={TargetSessionRouteContent} />
+        <Route path="*" />
+      </Route>
+    )
 
   return (
     <>

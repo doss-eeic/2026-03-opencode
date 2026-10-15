@@ -4,6 +4,7 @@ import { type Accessor, createEffect, createMemo, onCleanup, onMount } from "sol
 import { createStore } from "solid-js/store"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { useLanguage } from "@/context/language"
+import { useSingleSession, singleSessionCommand } from "@/context/ui-mode"
 import { useSettings } from "@/context/settings"
 import { dict as en } from "@/i18n/en"
 import { Persist, persisted } from "@/utils/persist"
@@ -264,6 +265,7 @@ function isEditableTarget(target: EventTarget | null) {
 export const { use: useCommand, provider: CommandProvider } = createSimpleContext({
   name: "Command",
   init: () => {
+    const singleSession = useSingleSession()
     const dialog = useDialog()
     const settings = useSettings()
     const language = useLanguage()
@@ -292,6 +294,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
 
       for (const reg of activeCommandRegistrations(store.registrations)) {
         for (const opt of reg.options()) {
+          if (singleSession && !singleSessionCommand(opt.id)) continue
           if (seen.has(opt.id)) {
             if (import.meta.env.DEV && !warnedDuplicates.has(opt.id)) {
               warnedDuplicates.add(opt.id)
