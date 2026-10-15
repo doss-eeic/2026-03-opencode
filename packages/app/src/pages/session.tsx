@@ -54,6 +54,8 @@ import { usePlatform } from "@/context/platform"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { useServerSDK } from "@/context/server-sdk"
 import { ServerConnection, serverName, useServer } from "@/context/server"
+import { sessionTitle } from "@/utils/session-title"
+import { useSingleSession } from "@/context/ui-mode"
 import { useSettings } from "@/context/settings"
 import { useSync } from "@/context/sync"
 import { useTabs } from "@/context/tabs"
@@ -351,6 +353,7 @@ function SessionPanelFrame(props: ParentProps<{ newLayout: boolean; raised?: boo
 }
 
 export default function Page() {
+  const minimal = useSingleSession()
   const serverSync = useServerSync()
   const layout = useLayout()
   const local = useLocal()
@@ -447,15 +450,16 @@ export default function Page() {
 
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const size = createSizing()
-  const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
+  const desktopReviewOpen = createMemo(() => !minimal && isDesktop() && view().reviewPanel.opened())
   const desktopV2ReviewOpen = createMemo(() => newSessionDesign() && desktopReviewOpen() && !!params.id)
-  const terminalOpen = createMemo(() => view().terminal.opened())
+  const terminalOpen = createMemo(() => !minimal && view().terminal.opened())
   const desktopTerminalOpen = createMemo(() => isDesktop() && terminalOpen())
   const desktopInlineTerminalOnlyOpen = createMemo(
     () => newSessionDesign() && desktopTerminalOpen() && !desktopV2ReviewOpen(),
   )
   const desktopFileTreeOpen = createMemo(
     () =>
+      !minimal &&
       isDesktop() &&
       shouldShowFileTree({
         visible: settings.visibility.fileTree(),
@@ -2061,7 +2065,9 @@ export default function Page() {
   const sessionPanelContent = () => (
     <>
       {sessionSync() ?? ""}
-      <Show when={!isDesktop() && !!params.id && settings.general.newLayoutDesigns() && !mobileTabsBottom()}>
+      <Show
+        when={!minimal && !isDesktop() && !!params.id && settings.general.newLayoutDesigns() && !mobileTabsBottom()}
+      >
         {mobileTabs(true)}
       </Show>
       <div class="flex-1 min-h-0 overflow-hidden">
@@ -2242,13 +2248,15 @@ export default function Page() {
           )
         }}
       </Show>
-      <Show when={!!params.id && mobileTabsBottom()}>{mobileTabs(true, true)}</Show>
+      <Show when={!minimal && !!params.id && mobileTabsBottom()}>{mobileTabs(true, true)}</Show>
     </>
   )
 
   return (
     <SessionRouteFrame>
-      <SessionHeader />
+      <Show when={!minimal} fallback={<SingleSessionHeader />}>
+        <SessionHeader />
+      </Show>
       <div
         ref={panelRow}
         class="flex-1 min-h-0 flex flex-col md:flex-row"
@@ -2256,7 +2264,9 @@ export default function Page() {
           "gap-2 p-2": settings.general.newLayoutDesigns(),
         }}
       >
-        <Show when={!isDesktop() && !!params.id && !settings.general.newLayoutDesigns()}>{mobileTabs()}</Show>
+        <Show when={!minimal && !isDesktop() && !!params.id && !settings.general.newLayoutDesigns()}>
+          {mobileTabs()}
+        </Show>
 
         <div
           classList={{
@@ -2383,9 +2393,24 @@ export default function Page() {
         </Show>
       </div>
 
-      <Show when={!newSessionDesign()}>
+      <Show when={!minimal && !newSessionDesign()}>
         <TerminalPanel />
       </Show>
     </SessionRouteFrame>
+  )
+}
+
+function SingleSessionHeader() {
+  const language = useLanguage()
+  const showSettings = useSettingsCommand()
+  const sync = useSync()
+  const params = useParams()
+  return (
+    <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border-weak-base px-4">
+      <h1 class="min-w-0 truncate text-14-medium">
+        {sessionTitle(sync().session.get(params.id ?? "")?.title) ?? language.t("command.session.new")}
+      </h1>
+      <Button onClick={showSettings}>{language.t("command.settings.open")}</Button>
+    </header>
   )
 }
