@@ -1,5 +1,5 @@
 
-import { Effect, Schema } from "effect"
+import { Effect, Schema, Scope } from "effect"
 import * as Tool from "./tool"
 import { Session } from "@/session/session"
 import type { TaskPromptOps } from "./task"
@@ -15,12 +15,15 @@ export const ReportToParentTool = Tool.define(
   "report_to_parent",
   Effect.gen(function* () {
     const sessions = yield* Session.Service
+    // 親への話しかけを別のフローで動かすための入れ物（task.ts 88行目と同じ）
+    const scope = yield* Scope.Scope
 
     return {
       description:
         "Send a short progress report to the parent session. " +
         "Use this only when you are running as a subagent. " +
-        "The report is saved in the parent's conversation.",
+        "The parent will be woken up to read the report. " +
+        "You do not need to wait for the parent's reply.",
       parameters: Parameters,
       execute: (params: Schema.Schema.Type<typeof Parameters>, ctx: Tool.Context) =>
         Effect.gen(function* () {
@@ -41,24 +44,27 @@ export const ReportToParentTool = Tool.define(
             return yield* Effect.die(new Error("report_to_parent requires promptOps in ctx.extra"))
           }
 
-          // 3. 親の会話に報告を保存する（noReply: true なので親は起こさない）
+          // 3. 親に報告を送って起こす
+          //    forkIn で別のフローにするので、子は親の返事を待たない（デッドロックしない）
+          //    失敗しても子の作業は止めない（Effect.ignore。inject と同じ）
           const parent = yield* sessions.get(self.parentID)
-          yield* ops.prompt({
-            sessionID: parent.id,
-            agent: parent.agent ?? ctx.agent,
-            noReply: true,
-            parts: [
-              {
-                type: "text",
-                synthetic: true,
-                text: `[子セッション ${ctx.sessionID} からの報告]\n${params.message}`,
-              },
-            ],
-          })
+          yield* ops
+            .prompt({
+              sessionID: parent.id,
+              agent: parent.agent ?? ctx.agent,
+              parts: [
+                {
+                  type: "text",
+                  synthetic: true,
+                  text: `[子セッション ${ctx.sessionID} からの報告]\n${params.message}`,
+                },
+              ],
+            })
+            .pipe(Effect.ignore, Effect.forkIn(scope, { startImmediately: true }))
 
           return {
             title: "Reported to parent",
-            output: `親セッション ${parent.id} に報告を保存しました。`,
+            output: `親セッション ${parent.id} に報告を送りました（親を起こします。返事は待ちません）。`,
             metadata: { parentID: String(parent.id) } as ReportMetadata,
           }
         }).pipe(Effect.orDie),
