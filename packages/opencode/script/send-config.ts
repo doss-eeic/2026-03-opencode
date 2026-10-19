@@ -6,7 +6,7 @@ if (!file || Bun.argv.length !== 3) throw new Error("Usage: bun script/send-conf
 
 const config = z
   .object({
-    baseURL: z.string().url(),
+    baseURL: z.url(),
     sessionID: z.string().min(1),
     text: z.string().regex(/\S/, "text must not be blank"),
   })
