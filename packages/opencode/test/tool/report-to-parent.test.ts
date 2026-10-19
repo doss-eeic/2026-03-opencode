@@ -166,4 +166,34 @@ describe("tool.report_to_parent", () => {
       expect(result.title).toBe("No parent")
     }),
   )
+
+  it.instance("does not fail the child when sending the report fails", () =>
+    Effect.gen(function* () {
+      const sessions = yield* Session.Service
+      const parent = yield* sessions.create({ title: "parent" })
+      const child = yield* sessions.create({ parentID: parent.id, title: "child" })
+      const tool = yield* ReportToParentTool
+      const def = yield* tool.init()
+
+      // prompt がわざと失敗する、にせものの promptOps
+      let called = 0
+      const ops: TaskPromptOps = {
+        cancel: () => Effect.void,
+        resolvePromptParts: (template) => Effect.succeed([{ type: "text" as const, text: template }]),
+        prompt: () =>
+          Effect.suspend(() => {
+            called++
+            return Effect.die(new Error("prompt failed"))
+          }),
+      }
+
+      const result = yield* def.execute({ message: "失敗しても大丈夫" }, makeCtx(child.id, ops, "call-fail"))
+      yield* settle
+
+      // 送信は試みられた
+      expect(called).toBe(1)
+      // それでも子のツールは失敗せず、ふつうに終わる
+      expect(result.title).toBe("Reported to parent")
+    }),
+  )
 })
