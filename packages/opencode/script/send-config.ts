@@ -1,17 +1,10 @@
 import { createOpencodeClient } from "@opencode-ai/sdk/client"
-import z from "zod"
+import { SendConfig } from "../src/schedule/schema"
 
 const file = Bun.argv[2]
 if (!file || Bun.argv.length !== 3) throw new Error("Usage: bun script/send-config.ts <config.json>")
 
-const config = z
-  .object({
-    baseURL: z.string().url(),
-    sessionID: z.string().min(1),
-    text: z.string().regex(/\S/, "text must not be blank"),
-  })
-  .strict()
-  .parse(await Bun.file(file).json())
+const config = SendConfig.parse(await Bun.file(file).json())
 
 const client = createOpencodeClient({ baseUrl: config.baseURL })
 const session = await client.session.get({
