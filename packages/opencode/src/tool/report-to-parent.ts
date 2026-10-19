@@ -9,7 +9,11 @@ export const Parameters = Schema.Struct({
 })
 
 // どの場合も同じ形で返すために、metadata の形を先に決めておく
-type ReportMetadata = { parentID?: string }
+type ReportMetadata = {
+  parentID?: string
+  callID?: string
+  duplicate?: boolean
+}
 
 export const ReportToParentTool = Tool.define(
   "report_to_parent",
@@ -17,6 +21,9 @@ export const ReportToParentTool = Tool.define(
     const sessions = yield* Session.Service
     // 親への話しかけを別のフローで動かすための入れ物（task.ts 88行目と同じ）
     const scope = yield* Scope.Scope
+    // 送った報告の callID を覚えておく（同じ呼び出しが2回動いても、2回目は送らない）
+    // サーバーを再起動すると消える（再起動後の復旧は MVP の範囲外）
+    const sent = new Set<string>()
 
     return {
       description:
@@ -27,6 +34,15 @@ export const ReportToParentTool = Tool.define(
       parameters: Parameters,
       execute: (params: Schema.Schema.Type<typeof Parameters>, ctx: Tool.Context) =>
         Effect.gen(function* () {
+          // 0. 同じ呼び出しの2回目なら、何もしない
+          if (ctx.callID && sent.has(ctx.callID)) {
+            return {
+              title: "Already reported",
+              output: `この報告（報告ID ${ctx.callID}）はもう送りました。`,
+              metadata: { callID: ctx.callID, duplicate: true } as ReportMetadata,
+            }
+          }
+
           // 1. 自分のセッションを調べて、親がいるかを確かめる
           const self = yield* sessions.get(ctx.sessionID)
           if (!self.parentID) {
@@ -44,10 +60,14 @@ export const ReportToParentTool = Tool.define(
             return yield* Effect.die(new Error("report_to_parent requires promptOps in ctx.extra"))
           }
 
-          // 3. 親に報告を送って起こす
+          const parent = yield* sessions.get(self.parentID)
+
+          // 3. 送る直前に「送った」と記録する（ここより前で終わったときは記録しない）
+          if (ctx.callID) sent.add(ctx.callID)
+
+          // 4. 親に報告を送って起こす
           //    forkIn で別のフローにするので、子は親の返事を待たない（デッドロックしない）
           //    失敗しても子の作業は止めない（Effect.ignore。inject と同じ）
-          const parent = yield* sessions.get(self.parentID)
           yield* ops
             .prompt({
               sessionID: parent.id,
@@ -56,7 +76,7 @@ export const ReportToParentTool = Tool.define(
                 {
                   type: "text",
                   synthetic: true,
-                  text: `[子セッション ${ctx.sessionID} からの報告]\n${params.message}`,
+                  text: `[子セッション ${ctx.sessionID} からの報告 / 報告ID ${ctx.callID ?? "なし"}]\n${params.message}`,
                 },
               ],
             })
@@ -65,7 +85,7 @@ export const ReportToParentTool = Tool.define(
           return {
             title: "Reported to parent",
             output: `親セッション ${parent.id} に報告を送りました（親を起こします。返事は待ちません）。`,
-            metadata: { parentID: String(parent.id) } as ReportMetadata,
+            metadata: { parentID: String(parent.id), callID: ctx.callID } as ReportMetadata,
           }
         }).pipe(Effect.orDie),
     }
