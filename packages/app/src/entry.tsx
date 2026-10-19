@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/solid"
 import { render } from "solid-js/web"
 import { AppBaseProviders, AppInterface } from "@/app"
+import { SingleSessionContext } from "@/context/ui-mode"
 import { loadInitialLocale } from "@/context/language"
 import { type Platform, PlatformProvider } from "@/context/platform"
 import { createBrowserDraftStore } from "@/utils/draft-store"
@@ -165,12 +166,14 @@ if (root instanceof HTMLElement) {
       () => (
         <PlatformProvider value={platform}>
           <AppBaseProviders locale={locale}>
-            <AppInterface
-              defaultServer={ServerConnection.Key.make(getDefaultUrl())}
-              canonicalLocalServer={ServerConnection.key(server)}
-              servers={[server]}
-              disableHealthCheck
-            />
+            <SingleSessionContext.Provider value={import.meta.env.VITE_OPENCODE_UI_MODE !== "full"}>
+              <AppInterface
+                defaultServer={ServerConnection.Key.make(getDefaultUrl())}
+                canonicalLocalServer={ServerConnection.key(server)}
+                servers={[server]}
+                disableHealthCheck
+              />
+            </SingleSessionContext.Provider>
           </AppBaseProviders>
         </PlatformProvider>
       ),

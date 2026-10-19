@@ -1,0 +1,99 @@
+[
+  {
+    "configuration": "before-registration-crud",
+    "runID": "2026-10-19T05-49-01-869Z-81185",
+    "status": "passed",
+    "source": "Recorded baseline stdout before session changes; selected metrics only",
+    "context": {
+      "cpuThrottle": 1,
+      "historyTurns": 40,
+      "queuedDeltas": 80,
+      "reviewPane": "closed",
+      "protocol": "v2",
+      "uiMode": "single-session"
+    },
+    "metrics": {
+      "endToEndInitialContentObservedMs": 397.15479099999993,
+      "completionObservedMs": 20671.299999952316,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "longTaskCount": 0,
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "bottomDriftTransitions": 0,
+      "blankSamples": 0
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "runID": "2026-10-19T05-57-04-044Z-91456",
+    "name": "performance: session timeline streaming > streams assistant text in v2 with review pane closed",
+    "status": "passed",
+    "expectedStatus": "passed",
+    "retry": 0,
+    "repeatEachIndex": 0,
+    "context": {
+      "project": "chromium",
+      "platform": "darwin",
+      "cpuThrottle": 1,
+      "profileCPU": false,
+      "profileVisual": false,
+      "minimal": false,
+      "queuedDeltas": 80,
+      "historyTurns": 40,
+      "eventBatch": 1,
+      "newLayoutDesigns": true,
+      "reviewPane": "closed",
+      "reviewDiffs": 0
+    },
+    "metrics": {
+      "endToEndInitialContentObservedMs": 379.2807089999999,
+      "capabilities": {
+        "visual": false,
+        "geometry": true
+      },
+      "completionObservedMs": 20555.299999952316,
+      "deltasPerSecond": 3.8919402781854595,
+      "rafGapSamples": 2472,
+      "rafCallbackRate": 120.07227651623917,
+      "observedProgressWindowRafCallbackRate": 120.03065917220235,
+      "observedProgressWindowRafGapP95Ms": 9.099999999999454,
+      "observedProgressWindowRafGaps": 2349,
+      "maxObservedProgressIndex": 80,
+      "observedProgressTransitions": 25,
+      "rafGapP50Ms": 8.300000000000182,
+      "rafGapP95Ms": 9.099999999998545,
+      "rafGapP99Ms": 9.299999999999272,
+      "maxRafGapMs": 9.400000000001455,
+      "rafGapsOver33Ms": 0,
+      "rafGapsOver50Ms": 0,
+      "missedFrameBudgetEquivalents": 0,
+      "longestRafGapOver33MsStreak": 0,
+      "longTaskCount": 0,
+      "longTaskTimeMs": 0,
+      "visual": null,
+      "geometry": {
+        "maxDistancePx": 0,
+        "finalDistancePx": 0,
+        "final": {
+          "scrollTop": 13449,
+          "scrollHeight": 14029,
+          "clientHeight": 580,
+          "distance": 0,
+          "virtualHeight": 14029,
+          "headerHeight": 0
+        },
+        "distanceTransitionsPx": [0],
+        "bottomDriftTransitions": 0,
+        "blankSamples": 0
+      },
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "domTextCharacters": 1919,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "reviewPane": null
+    },
+    "configuration": "after-registration-crud"
+  }
+]

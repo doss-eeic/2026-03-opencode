@@ -1,0 +1,15 @@
+{
+  "baseURL": "http://127.0.0.1:4096",
+  "id": "daily-check",
+  "name": "毎日の確認",
+  "enabled": true,
+  "sessionID": "<送信先のID>",
+  "text": "作業の進捗を確認して報告してください。",
+  "recurrenceRules": [
+    {
+      "dtstart": "2026-10-20T07:00:00",
+      "timezone": "Asia/Tokyo",
+      "rrule": "FREQ=DAILY;BYHOUR=7,21;BYMINUTE=0;BYSECOND=0"
+    }
+  ]
+}

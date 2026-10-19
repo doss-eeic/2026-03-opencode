@@ -1,0 +1,150 @@
+[
+  {
+    "configuration": "baseline-full",
+    "schemaVersion": 2,
+    "runID": "2026-10-15T04-16-12-493Z-76711",
+    "name": "performance: session timeline streaming > streams assistant text in v2 with review pane closed",
+    "status": "passed",
+    "expectedStatus": "passed",
+    "retry": 0,
+    "repeatEachIndex": 0,
+    "context": {
+      "project": "chromium",
+      "platform": "darwin",
+      "cpuThrottle": 1,
+      "profileCPU": false,
+      "profileVisual": false,
+      "minimal": false,
+      "queuedDeltas": 80,
+      "historyTurns": 40,
+      "eventBatch": 1,
+      "newLayoutDesigns": true,
+      "reviewPane": "closed",
+      "reviewDiffs": 0
+    },
+    "metrics": {
+      "endToEndInitialContentObservedMs": 359.090917,
+      "capabilities": {
+        "visual": false,
+        "geometry": true
+      },
+      "completionObservedMs": 20115.099999964237,
+      "deltasPerSecond": 3.977111722046733,
+      "rafGapSamples": 2418,
+      "rafCallbackRate": 120.03693444136658,
+      "observedProgressWindowRafCallbackRate": 120.00373552484123,
+      "observedProgressWindowRafGapP95Ms": 9,
+      "observedProgressWindowRafGaps": 2313,
+      "maxObservedProgressIndex": 80,
+      "observedProgressTransitions": 25,
+      "rafGapP50Ms": 8.300000000000182,
+      "rafGapP95Ms": 9,
+      "rafGapP99Ms": 9.200000000000728,
+      "maxRafGapMs": 9.400000000001455,
+      "rafGapsOver33Ms": 0,
+      "rafGapsOver50Ms": 0,
+      "missedFrameBudgetEquivalents": 0,
+      "longestRafGapOver33MsStreak": 0,
+      "longTaskCount": 0,
+      "longTaskTimeMs": 0,
+      "visual": null,
+      "geometry": {
+        "maxDistancePx": 0,
+        "finalDistancePx": 0,
+        "final": {
+          "scrollTop": 13495,
+          "scrollHeight": 14093,
+          "clientHeight": 598,
+          "distance": 0,
+          "virtualHeight": 14029,
+          "headerHeight": 64
+        },
+        "distanceTransitionsPx": [
+          0
+        ],
+        "bottomDriftTransitions": 0,
+        "blankSamples": 0
+      },
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "domTextCharacters": 1919,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "reviewPane": null
+    }
+  },
+  {
+    "configuration": "after-single-session",
+    "schemaVersion": 2,
+    "runID": "2026-10-15T04-29-05-908Z-79603",
+    "name": "performance: session timeline streaming > streams assistant text in v2 with review pane closed",
+    "status": "passed",
+    "expectedStatus": "passed",
+    "retry": 0,
+    "repeatEachIndex": 0,
+    "context": {
+      "project": "chromium",
+      "platform": "darwin",
+      "cpuThrottle": 1,
+      "profileCPU": false,
+      "profileVisual": false,
+      "minimal": false,
+      "queuedDeltas": 80,
+      "historyTurns": 40,
+      "eventBatch": 1,
+      "newLayoutDesigns": true,
+      "reviewPane": "closed",
+      "reviewDiffs": 0
+    },
+    "metrics": {
+      "endToEndInitialContentObservedMs": 395.0898749999999,
+      "capabilities": {
+        "visual": false,
+        "geometry": true
+      },
+      "completionObservedMs": 20854.5,
+      "deltasPerSecond": 3.8361025198398426,
+      "rafGapSamples": 2511,
+      "rafCallbackRate": 120.12514830265222,
+      "observedProgressWindowRafCallbackRate": 120.07638934378734,
+      "observedProgressWindowRafGapP95Ms": 9.100000000000364,
+      "observedProgressWindowRafGaps": 2383,
+      "maxObservedProgressIndex": 80,
+      "observedProgressTransitions": 25,
+      "rafGapP50Ms": 8.300000000000182,
+      "rafGapP95Ms": 9.100000000000364,
+      "rafGapP99Ms": 9.300000000000182,
+      "maxRafGapMs": 9.400000000000546,
+      "rafGapsOver33Ms": 0,
+      "rafGapsOver50Ms": 0,
+      "missedFrameBudgetEquivalents": 0,
+      "longestRafGapOver33MsStreak": 0,
+      "longTaskCount": 0,
+      "longTaskTimeMs": 0,
+      "visual": null,
+      "geometry": {
+        "maxDistancePx": 0,
+        "finalDistancePx": 0,
+        "final": {
+          "scrollTop": 13449,
+          "scrollHeight": 14029,
+          "clientHeight": 580,
+          "distance": 0,
+          "virtualHeight": 14029,
+          "headerHeight": 0
+        },
+        "distanceTransitionsPx": [
+          0
+        ],
+        "bottomDriftTransitions": 0,
+        "blankSamples": 0
+      },
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "domTextCharacters": 1919,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "reviewPane": null
+    }
+  }
+]
