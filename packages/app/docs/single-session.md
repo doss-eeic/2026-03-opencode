@@ -51,13 +51,13 @@ PLAYWRIGHT_PORT=4452 bunx playwright test e2e/regression/session-request-docks.s
 
 The original full UI and the minimal UI were measured with the same Chromium workload: 40 historical turns, 80 streamed deltas, event batch 1, CPU throttle 1. This is a reduced local diagnostic workload, not the suite's default stress profile.
 
-| Metric | Original full UI | Minimal UI |
-| --- | ---: | ---: |
-| Completion observed | 20,115.10 ms | 20,854.50 ms |
-| Initial content observed | 359.09 ms | 395.09 ms |
-| Long tasks | 0 | 0 |
-| Timeline/Markdown remounts | 0 / 0 | 0 / 0 |
-| Blank samples / bottom drift | 0 / 0 | 0 / 0 |
+| Metric                       | Original full UI |   Minimal UI |
+| ---------------------------- | ---------------: | -----------: |
+| Completion observed          |     20,115.10 ms | 20,854.50 ms |
+| Initial content observed     |        359.09 ms |    395.09 ms |
+| Long tasks                   |                0 |            0 |
+| Timeline/Markdown remounts   |            0 / 0 |        0 / 0 |
+| Blank samples / bottom drift |            0 / 0 |        0 / 0 |
 
 All 80 deltas were delivered in both runs. The single-sample completion difference is approximately +3.7%; this is not enough evidence for a performance improvement or regression claim. Raw benchmark records are in `single-session-benchmark.json`.
 
@@ -68,3 +68,11 @@ bunx playwright test --config e2e/performance/playwright.config.ts \
 timeline/session-timeline-benchmark.spec.ts \
 -g 'streams assistant text in v2 with review pane closed'
 ```
+
+## 定期実行の登録ツールとの接続（2026-10-19）
+
+PR3では、標準サーバーへの接続時に、記憶したセッション自身を `opencode.schedulerOwner` metadataで指定し、接続先とブラウザーのタイムゾーンも保存する。準備に失敗した場合は会話を開かず、同じ保存済みIDで再試行する。フルUIでは指定しない。詳細は [`../../opencode/docs/scheduled-tasks.md`](../../opencode/docs/scheduled-tasks.md)。互換APIのないV2専用サーバーでは、このツール登録を行わず既存チャット動作を保つ。
+
+登録CRUDと子セッション制限は標準サーバーの互換ツール実行経路に実装し、予定時刻の送信はまだ行わない。
+
+セッションコード変更前後に、上記と同じ40履歴・80デルタ・CPU throttle 1のproduction benchmarkを測定した。初期表示は397.15→379.28 ms、完了観測は20,671.30→20,555.30 ms。いずれも80デルタ配信、long task・再マウント・空白・下端ずれは0。各1サンプルの互換性確認であり、性能改善を示すものではない。このbenchmarkはV2チャット経路を測り、v1のmetadata登録通信はブラウザー回帰テストで別途確認する。記録は [`schedule-registration-benchmark.json`](./schedule-registration-benchmark.json)。

@@ -42,6 +42,34 @@ export function SingleSessionShell(props: ParentProps) {
           write: (id) => localStorage.setItem(name, id),
           get: (id) => sdk.api.session.get({ sessionID: id }),
           create: () => sdk.api.session.create({ location: { directory } }),
+          prepare: async (sessionID) => {
+            // Native-only v2 servers do not expose the legacy tool registry/metadata API.
+            if ((await sdk.protocol) !== "v1") return
+            // The server also verifies the session-bound marker: children/forks cannot inherit ownership.
+            const result = await sdk.client.session.get({ sessionID, directory }, { throwOnError: true })
+            if (!result.data) throw new Error("Missing coordinator session")
+            const metadata = result.data.metadata ?? {}
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+            if (
+              metadata["opencode.schedulerOwner"] === sessionID &&
+              metadata["opencode.schedulerBaseURL"] === sdk.url &&
+              metadata["opencode.schedulerTimezone"] === timezone
+            )
+              return
+            await sdk.client.session.update(
+              {
+                sessionID,
+                directory,
+                metadata: {
+                  ...metadata,
+                  "opencode.schedulerOwner": sessionID,
+                  "opencode.schedulerBaseURL": sdk.url,
+                  "opencode.schedulerTimezone": timezone,
+                },
+              },
+              { throwOnError: true },
+            )
+          },
         }),
       )
       return { id, href: sessionHref(key, id) }

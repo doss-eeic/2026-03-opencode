@@ -28,6 +28,36 @@ describe("persistent single session", () => {
     expect(f.state.creates).toBe(1)
   })
 
+  test("prepares newly created and remembered sessions before exposing them", async () => {
+    const f = fixture()
+    const prepared: string[] = []
+    const input = {
+      ...f.input,
+      prepare: async (id: string) => {
+        prepared.push(id)
+      },
+    }
+    await ensureSingleSession(input)
+    await ensureSingleSession(input)
+    expect(prepared).toEqual(["ses_main", "ses_main"])
+    expect(f.state.creates).toBe(1)
+  })
+
+  test("retries failed preparation using the saved identity instead of creating again", async () => {
+    const f = fixture()
+    await expect(
+      ensureSingleSession({
+        ...f.input,
+        prepare: async () => {
+          throw new Error("offline")
+        },
+      }),
+    ).rejects.toThrow("offline")
+    expect(f.state.id).toBe("ses_main")
+    expect(await ensureSingleSession({ ...f.input, prepare: async () => {} })).toBe("ses_main")
+    expect(f.state.creates).toBe(1)
+  })
+
   test("replaces a confirmed deleted or archived session", async () => {
     for (const get of [
       async () => {
