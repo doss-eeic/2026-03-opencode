@@ -124,6 +124,12 @@ export async function setupTimelineBenchmark(
     events: () => events.splice(0, eventBatch),
     eventRetry: 16,
   })
+  if (process.env.VITE_OPENCODE_UI_MODE === "single-session") {
+    await page.route(/\/session(?:\?.*)?$/, (route) => {
+      if (route.request().method() !== "POST") return route.fallback()
+      return route.fulfill({ json: session(), headers: { "access-control-allow-origin": "*" } })
+    })
+  }
   await page.addInitScript(
     (input) => {
       localStorage.setItem(
