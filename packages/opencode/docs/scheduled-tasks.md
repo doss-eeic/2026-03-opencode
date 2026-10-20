@@ -2,7 +2,7 @@
 
 2026年10月19日。既存の子セッションへ、指定した日時に依頼文を送るための共通契約。
 
-このPRは送信スクリプト・共有型・チャットからの登録CRUDを提供する。PR1の永続セッションUIを依存コミットとして取り込んでいるが、GitHub上のPRはマージしない。**指定時刻の判定・繰り返し送信は未実装**。設定保存を実行開始と表示しない。
+このPRは1回分の送信関数・共有型・チャットからの登録CRUDを提供する。PR1の永続セッションUIを依存コミットとして取り込んでいるが、GitHub上のPRはマージしない。**指定時刻の判定・繰り返し送信は未実装**。設定保存を実行開始と表示しない。
 
 ## 永続セッションのチャットから登録・管理する
 
@@ -50,7 +50,7 @@ const config = ScheduleConfig.parse(input)
 
 スキーマは未知のフィールドを拒否する。設定ファイルに実行状態を混ぜたり、フィールド名を誤ったりした場合もエラーにする。
 
-## 現在の1回送信
+## 1回分の送信
 
 ```typescript
 type SendConfig = {
@@ -60,7 +60,7 @@ type SendConfig = {
 }
 ```
 
-`bun script/send-config.ts <config.json>` はこの3項目だけを読み、既存のセッションに1回送る。`directory` はセッション情報から取得する。このコマンドの設定を、下の `ScheduleConfig` に自動変換することはしない。
+`src/schedule/send.ts` の `sendPrompt(config)` はこの3項目だけを受け取り、既存のセッションに1回送る。`directory` はセッション情報から取得する。手動で送るコマンドは提供しない。
 
 ## 定期実行の設定と状態
 
@@ -120,7 +120,7 @@ type ScheduleConfig = Omit<Schedule, "revision" | "nextRunAt"> & {
 }
 ```
 
-現在の送信コマンドはこの形式には対応していない。定期実行側が、次の構造で1回の送信に渡す。
+`sendPrompt` はこの形式を直接受け取らない。定期実行側が、次の構造に変換して `sendPrompt` に渡す。
 
 ```typescript
 const message: SendConfig = {
