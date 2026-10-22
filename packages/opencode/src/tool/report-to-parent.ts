@@ -62,6 +62,11 @@ export const ReportToParentTool = Tool.define(
 
           const parent = yield* sessions.get(self.parentID)
 
+          // 親の variant を引き継ぐ（渡さないと prompt.ts が親の variant を defaultに書き換える）
+          // model は渡さなくても prompt.ts が親の今のモデルを引き継ぐので、variant だけ渡す
+          const variant =
+            parent.model?.variant && parent.model.variant !== "default" ? parent.model.variant : undefined
+
           // 3. 送る直前に「送った」と記録する（ここより前で終わったときは記録しない）
           if (ctx.callID) sent.add(ctx.callID)
 
@@ -71,7 +76,8 @@ export const ReportToParentTool = Tool.define(
           yield* ops
             .prompt({
               sessionID: parent.id,
-              agent: parent.agent ?? ctx.agent,
+              agent: parent.agent,
+              ...(variant ? { variant } : {}),
               parts: [
                 {
                   type: "text",

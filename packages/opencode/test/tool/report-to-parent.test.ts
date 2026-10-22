@@ -24,6 +24,8 @@ import { ToolRegistry } from "@/tool/registry"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { disposeAllInstances } from "../fixture/fixture"
 import { testEffect } from "../lib/effect"
+import { ProviderV2 } from "@opencode-ai/core/provider"
+import { ModelV2 } from "@opencode-ai/core/model"
 
 afterEach(async () => {
   await disposeAllInstances()
@@ -194,6 +196,54 @@ describe("tool.report_to_parent", () => {
       expect(called).toBe(1)
       // それでも子のツールは失敗せず、ふつうに終わる
       expect(result.title).toBe("Reported to parent")
+    }),
+  )
+
+  it.instance("keeps the parent's agent and variant", () =>
+    Effect.gen(function* () {
+      const sessions = yield* Session.Service
+      const parent = yield* sessions.create({ title: "parent" })
+      // 親に agent と variant（high）を記録しておく
+      yield* sessions.setAgentModel({
+        sessionID: parent.id,
+        agent: "build",
+        model: { id: ModelV2.ID.make("test-model"), providerID: ProviderV2.ID.make("test"), variant: "high" },
+        time: Date.now(),
+      })
+      const child = yield* sessions.create({ parentID: parent.id, title: "child" })
+      const tool = yield* ReportToParentTool
+      const def = yield* tool.init()
+
+      const seen: SessionPrompt.PromptInput[] = []
+      const ops = stubOps((input) => seen.push(input))
+
+      yield* def.execute({ message: "途中経過です" }, makeCtx(child.id, ops, "call-variant"))
+      yield* settle
+
+      expect(seen).toHaveLength(1)
+      expect(seen[0]?.agent).toBe("build")
+      expect(seen[0]?.variant).toBe("high")
+    }),
+  )
+
+  it.instance("does not pass the child's agent when the parent has none", () =>
+    Effect.gen(function* () {
+      const sessions = yield* Session.Service
+      const parent = yield* sessions.create({ title: "parent" })
+      const child = yield* sessions.create({ parentID: parent.id, title: "child" })
+      const tool = yield* ReportToParentTool
+      const def = yield* tool.init()
+
+      const seen: SessionPrompt.PromptInput[] = []
+      const ops = stubOps((input) => seen.push(input))
+
+      // makeCtx の agent は "general"（子のエージェント）
+      yield* def.execute({ message: "途中経過です" }, makeCtx(child.id, ops, "call-agent"))
+      yield* settle
+
+      expect(seen).toHaveLength(1)
+      expect(seen[0]?.agent).not.toBe("general")
+      expect(seen[0]?.variant).toBeUndefined()
     }),
   )
 })
