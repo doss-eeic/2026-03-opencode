@@ -56,6 +56,7 @@ import { useServerSDK } from "@/context/server-sdk"
 import { ServerConnection, serverName, useServer } from "@/context/server"
 import { sessionTitle } from "@/utils/session-title"
 import { useSingleSession } from "@/context/ui-mode"
+import akamonCat from "@/assets/akamon-cat.png"
 import { useSettings } from "@/context/settings"
 import { useSync } from "@/context/sync"
 import { useTabs } from "@/context/tabs"
@@ -339,6 +340,7 @@ function SessionRouteFrame(props: ParentProps<{ padded?: boolean }>) {
 function SessionPanelFrame(props: ParentProps<{ newLayout: boolean; raised?: boolean }>) {
   return (
     <div
+      data-component="session-panel"
       classList={{
         "flex-1 min-h-0 flex flex-col": true,
         "bg-v2-background-bg-base": props.newLayout,
@@ -2070,7 +2072,14 @@ export default function Page() {
       >
         {mobileTabs(true)}
       </Show>
-      <div class="flex-1 min-h-0 overflow-hidden">
+      <div class="flex-1 min-h-0 overflow-hidden" classList={{ relative: minimal }}>
+        <Show when={minimal && messagesReady() && userMessages().length === 0}>
+          <div data-component="akamon-welcome">
+            <img src={akamonCat} alt="" width="160" height="160" draggable={false} />
+            <h2>{language.t("chat.mascot.welcome")}</h2>
+            <p>{language.t("chat.mascot.hint")}</p>
+          </div>
+        </Show>
         <Switch>
           <Match when={params.id && mobileChanges()}>
             <div class="relative h-full overflow-hidden">
@@ -2406,10 +2415,14 @@ function SingleSessionHeader() {
   const sync = useSync()
   const params = useParams()
   return (
-    <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border-weak-base px-4">
-      <h1 class="min-w-0 truncate text-14-medium">
-        {sessionTitle(sync().session.get(params.id ?? "")?.title) ?? language.t("command.session.new")}
-      </h1>
+    <header data-component="akamon-header">
+      <div class="akamon-header-identity">
+        <img src={akamonCat} alt="" width="72" height="72" draggable={false} />
+        <div class="akamon-header-titles">
+          <span class="akamon-header-name">{language.t("chat.mascot.name")}</span>
+          <h1>{sessionTitle(sync().session.get(params.id ?? "")?.title) ?? language.t("command.session.new")}</h1>
+        </div>
+      </div>
       <Button onClick={showSettings}>{language.t("command.settings.open")}</Button>
     </header>
   )

@@ -1,4 +1,7 @@
 export const dict = {
+  "chat.mascot.name": "赤門ねこ",
+  "chat.mascot.welcome": "今日は、何をいっしょに考えよう？",
+  "chat.mascot.hint": "ちょっとした気になることから、気軽にどうぞ。",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "ファイル",
   "desktop.menu.edit": "編集",

@@ -1,0 +1,113 @@
+{
+  "workload": {
+    "historyTurns": 40,
+    "deltas": 80,
+    "eventBatch": 1,
+    "cpuThrottle": 1,
+    "layout": "single-session, v2 composer",
+    "browser": "installed Chrome"
+  },
+  "baseline": {
+    "runID": "2026-10-22T04-08-43-494Z-72455",
+    "metrics": {
+      "endToEndInitialContentObservedMs": 631.9045839999999,
+      "capabilities": {
+        "visual": false,
+        "geometry": true
+      },
+      "completionObservedMs": 21609.100000023842,
+      "deltasPerSecond": 3.702144004142317,
+      "rafGapSamples": 1290,
+      "rafCallbackRate": 59.45193610536438,
+      "observedProgressWindowRafCallbackRate": 59.322980130199866,
+      "observedProgressWindowRafGapP95Ms": 16.799999999999272,
+      "observedProgressWindowRafGaps": 1222,
+      "maxObservedProgressIndex": 80,
+      "observedProgressTransitions": 25,
+      "rafGapP50Ms": 16.69999999999891,
+      "rafGapP95Ms": 16.799999999999272,
+      "rafGapP99Ms": 16.800000000000182,
+      "maxRafGapMs": 249.90000000000055,
+      "rafGapsOver33Ms": 1,
+      "rafGapsOver50Ms": 1,
+      "missedFrameBudgetEquivalents": 14,
+      "longestRafGapOver33MsStreak": 1,
+      "longTaskCount": 0,
+      "longTaskTimeMs": 0,
+      "visual": null,
+      "geometry": {
+        "maxDistancePx": 0,
+        "finalDistancePx": 0,
+        "final": {
+          "scrollTop": 13449,
+          "scrollHeight": 14029,
+          "clientHeight": 580,
+          "distance": 0,
+          "virtualHeight": 14029,
+          "headerHeight": 0
+        },
+        "distanceTransitionsPx": [0],
+        "bottomDriftTransitions": 0,
+        "blankSamples": 0
+      },
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "domTextCharacters": 1919,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "reviewPane": null
+    }
+  },
+  "themed": {
+    "runID": "2026-10-22T04-13-31-787Z-77242",
+    "metrics": {
+      "endToEndInitialContentObservedMs": 367.02099999999996,
+      "capabilities": {
+        "visual": false,
+        "geometry": true
+      },
+      "completionObservedMs": 20598.899999976158,
+      "deltasPerSecond": 3.883702527809378,
+      "rafGapSamples": 1243,
+      "rafCallbackRate": 60.02771996064816,
+      "observedProgressWindowRafCallbackRate": 60.002142933676204,
+      "observedProgressWindowRafGapP95Ms": 16.700000000000728,
+      "observedProgressWindowRafGaps": 1176,
+      "maxObservedProgressIndex": 80,
+      "observedProgressTransitions": 25,
+      "rafGapP50Ms": 16.699999999999818,
+      "rafGapP95Ms": 16.700000000000728,
+      "rafGapP99Ms": 16.800000000000182,
+      "maxRafGapMs": 16.80000000000291,
+      "rafGapsOver33Ms": 0,
+      "rafGapsOver50Ms": 0,
+      "missedFrameBudgetEquivalents": 0,
+      "longestRafGapOver33MsStreak": 0,
+      "longTaskCount": 0,
+      "longTaskTimeMs": 0,
+      "visual": null,
+      "geometry": {
+        "maxDistancePx": 0,
+        "finalDistancePx": 0,
+        "final": {
+          "scrollTop": 14481,
+          "scrollHeight": 14990,
+          "clientHeight": 509,
+          "distance": 0,
+          "virtualHeight": 14990,
+          "headerHeight": 0
+        },
+        "distanceTransitionsPx": [0],
+        "bottomDriftTransitions": 0,
+        "blankSamples": 0
+      },
+      "rowReplaced": false,
+      "markdownReplaced": false,
+      "domTextCharacters": 1919,
+      "deliveredDeltas": 80,
+      "pendingDeltas": 0,
+      "reviewPane": null
+    }
+  },
+  "note": "Single local run per version; timing variation is not evidence of a performance improvement."
+}
