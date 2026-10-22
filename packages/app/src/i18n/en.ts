@@ -2,6 +2,9 @@ import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
   ...DESKTOP_NATIVE_ENGLISH,
+  "chat.mascot.name": "Akamon Cat",
+  "chat.mascot.welcome": "What shall we explore today?",
+  "chat.mascot.hint": "A little curiosity is a good place to start.",
   "command.category.suggested": "Suggested",
   "command.category.view": "View",
   "command.category.project": "Project",

@@ -9,6 +9,7 @@ import { ServerScope } from "@/utils/server-scope"
 import { pathKey } from "@/utils/path-key"
 import { sessionHref } from "@/utils/session-route"
 import { ensureSingleSession } from "@/utils/single-session"
+import "./single-session.css"
 
 type SessionEvent = {
   type: string

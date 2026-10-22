@@ -136,11 +136,99 @@ async function ready(page: Page, id: string) {
   await expect(page.locator('[data-component="prompt-input"][contenteditable="true"]')).toBeVisible()
 }
 
+for (const newLayoutDesigns of [false, true]) {
+  test(`mascot chat stays readable across viewport and color scheme changes (new layout: ${newLayoutDesigns})`, async ({
+    page,
+  }, testInfo) => {
+    const data = state()
+    data.messages = [
+      {
+        info: {
+          id: "msg_mascot_user",
+          sessionID: "ses_auto_1",
+          role: "user",
+          agent: "build",
+          model: { providerID: "opencode", modelID: "test-model" },
+          time: { created: 1700000000000 },
+        },
+        parts: [
+          {
+            id: "prt_mascot_user",
+            type: "text",
+            text: "Can you help me plan an afternoon on campus?",
+            sessionID: "ses_auto_1",
+            messageID: "msg_mascot_user",
+          },
+        ],
+      },
+      {
+        info: {
+          id: "msg_mascot_reply",
+          sessionID: "ses_auto_1",
+          role: "assistant",
+          parentID: "msg_mascot_user",
+          agent: "build",
+          mode: "build",
+          providerID: "opencode",
+          modelID: "test-model",
+          path: { cwd: directory, root: directory },
+          cost: 0,
+          tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } },
+          time: { created: 1700000001000, completed: 1700000002000 },
+        },
+        parts: [
+          {
+            id: "prt_mascot_reply",
+            type: "text",
+            text: "Of course! Let's make a little room for curiosity.\n\n- Take a stroll beneath the ginkgo trees.\n- Bring a book and find a quiet corner.\n- Leave time for something unexpected.\n\n**One small adventure is enough.**",
+            sessionID: "ses_auto_1",
+            messageID: "msg_mascot_reply",
+          },
+        ],
+      },
+    ]
+    await page.addInitScript((value) => {
+      localStorage.setItem("settings.v3", JSON.stringify({ general: { newLayoutDesigns: value } }))
+    }, newLayoutDesigns)
+    await setup(page, data)
+    await page.goto("/")
+    await ready(page, "ses_auto_1")
+    const portrait = page.locator('[data-component="akamon-header"] img')
+    await expect(portrait).toBeVisible()
+    await expect.poll(() => portrait.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
+    await expect(page.locator('[data-component="akamon-welcome"]')).toHaveCount(0)
+    const reply = page.locator('[data-component="text-part"]').filter({ hasText: "One small adventure is enough." })
+    await expect(reply).toContainText("One small adventure is enough.")
+    await expect
+      .poll(() => reply.evaluate((el) => getComputedStyle(el, "::before").backgroundImage))
+      .toContain("akamon-cat")
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport)
+      for (const colorScheme of ["light", "dark"] as const) {
+        await page.emulateMedia({ colorScheme, reducedMotion: "reduce" })
+        await expect(page.locator("html")).toHaveAttribute("data-color-scheme", colorScheme)
+        await expect(reply).toBeVisible()
+        await expect(page.getByRole("button", { name: "Open settings", exact: true })).toBeVisible()
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+        await expect.poll(() => reply.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+        await page.screenshot({
+          path: testInfo.outputPath(`mascot-${viewport.width}-${colorScheme}.png`),
+          animations: "disabled",
+        })
+      }
+    }
+  })
+}
+
 test("automatically creates one conversation and reuses it after reload and reopening", async ({ page, context }) => {
   const data = state()
   await setup(page, data)
   await page.goto("/")
   await ready(page, "ses_auto_1")
+  await expect(page.getByRole("heading", { name: "What shall we explore today?", exact: true })).toBeVisible()
   expect(data.creates).toEqual(["ses_auto_1"])
   await page.reload()
   await ready(page, "ses_auto_1")
@@ -324,6 +412,15 @@ test("sends to the remembered session, renders streaming replies, and stops exec
   await expect(page.getByText("Streaming reply", { exact: true })).toBeVisible()
   await send("session.text.delta", { ordinal: 0, delta: " arrived" })
   await expect(page.getByText("Streaming reply arrived", { exact: true })).toBeVisible()
+  await expect(page.locator('[data-component="akamon-welcome"]')).toHaveCount(0)
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-component="text-part"]')
+        .filter({ hasText: "Streaming reply arrived" })
+        .evaluate((el) => getComputedStyle(el, "::before").backgroundImage),
+    )
+    .toContain("akamon-cat")
   data.messages.push({
     info: {
       id: "msg_single_reply",
