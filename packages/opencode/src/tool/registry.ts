@@ -10,12 +10,15 @@ import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
 import { ReadTool } from "./read"
 import { TaskTool } from "./task"
+import { ReportToParentTool } from "./report-to-parent"
+import { CronTool } from "./cron"
+import { ScheduleRegistration } from "@/schedule/registration"
+import { SessionID } from "@/session/schema"
 import { Database } from "@opencode-ai/core/database/database"
 import { TodoWriteTool } from "./todo"
 import { WebFetchTool } from "./webfetch"
 import { WriteTool } from "./write"
 import { InvalidTool } from "./invalid"
-import { ReportToParentTool } from "./report-to-parent"
 import { SkillTool } from "./skill"
 import * as Tool from "./tool"
 import { Config } from "@/config/config"
@@ -84,6 +87,7 @@ export interface Interface {
     modelID: ModelV2.ID
     agent: Agent.Info
     permission?: PermissionV1.Ruleset
+    sessionID?: SessionID
   }) => Effect.Effect<Tool.Def[]>
 }
 
@@ -102,6 +106,8 @@ const layer = Layer.effect(
     const invalid = yield* InvalidTool
     const task = yield* TaskTool
     const reportToParent = yield* ReportToParentTool
+    const cron = yield* CronTool
+    const sessions = yield* Session.Service
     const read = yield* ReadTool
     const question = yield* QuestionTool
     const todo = yield* TodoWriteTool
@@ -217,6 +223,7 @@ const layer = Layer.effect(
           edit: Tool.init(edit),
           write: Tool.init(writetool),
           task: Tool.init(task),
+          cron: Tool.init(cron),
           reportToParent: Tool.init(reportToParent),
           fetch: Tool.init(webfetch),
           todo: Tool.init(todo),
@@ -241,6 +248,7 @@ const layer = Layer.effect(
             tool.edit,
             tool.write,
             tool.task,
+            tool.cron,
             tool.reportToParent,
             tool.fetch,
             tool.todo,
@@ -293,7 +301,11 @@ const layer = Layer.effect(
     })
 
     const tools: Interface["tools"] = Effect.fn("ToolRegistry.tools")(function* (input) {
+      const owner = input.sessionID
+        ? yield* sessions.get(input.sessionID).pipe(Effect.catch(() => Effect.succeed(undefined)))
+        : undefined
       const filtered = (yield* all()).filter((tool) => {
+        if (tool.id === CronTool.id) return owner !== undefined && ScheduleRegistration.isOwner(owner)
         if (tool.id === WebSearchTool.id) {
           return webSearchEnabled(input.providerID, { exa: flags.enableExa, parallel: flags.enableParallel })
         }
@@ -328,6 +340,9 @@ const layer = Layer.effect(
             id: tool.id,
             description: [
               output.description,
+              tool.id === CronTool.id
+                ? `Current UTC time: ${new Date().toISOString()}. User timezone: ${owner?.metadata?.[ScheduleRegistration.TimezoneKey] ?? "unknown; ask the user"}.`
+                : undefined,
               tool.id === TaskTool.id ? yield* describeTask(input.agent) : undefined,
               tool.id === "execute" ? codeModeDescription : undefined,
             ]
@@ -439,6 +454,7 @@ export const node = LayerNode.make({
     Agent.node,
     Skill.node,
     Session.node,
+    ScheduleRegistration.node,
     BackgroundJob.node,
     Provider.node,
     LSP.node,

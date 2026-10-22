@@ -28,6 +28,8 @@ function state() {
     creates: [] as string[],
     failure: 0,
     protocol: "v2" as "v1" | "v2",
+    metadataWrites: 0,
+    metadataFailure: false,
     permissions: [] as unknown[],
     questions: [] as unknown[],
     messages: [] as unknown[],
@@ -37,6 +39,7 @@ function state() {
       directory: string
       title: string
       projectID: string
+      metadata?: Record<string, string>
       time: { created: number; updated: number; archived?: number }
     }>,
   }
@@ -102,6 +105,18 @@ async function setup(page: Page, data: ReturnType<typeof state>) {
       data.sessions.push(session)
       data.creates.push(session.id)
       return route.fulfill({ json: data.protocol === "v1" ? session : { data: currentSession(session) }, headers })
+    }
+    const legacyID = path.match(/^\/session\/([^/]+)$/)?.[1]
+    if (legacyID && ["GET", "PATCH"].includes(route.request().method())) {
+      if (data.failure) return route.fulfill({ status: data.failure, json: { name: "Unauthorized" }, headers })
+      const session = data.sessions.find((item) => item.id === legacyID)
+      if (!session) return route.fulfill({ status: 404, json: { name: "NotFoundError" }, headers })
+      if (route.request().method() === "PATCH") {
+        if (data.metadataFailure) return route.fulfill({ status: 500, json: { name: "UnknownError" }, headers })
+        data.metadataWrites++
+        session.metadata = route.request().postDataJSON().metadata
+      }
+      return route.fulfill({ json: session, headers })
     }
     const id = path.match(/^\/api\/session\/([^/]+)$/)?.[1]
     if (id && route.request().method() === "GET") {
@@ -232,6 +247,26 @@ test("supports legacy backends", async ({ page }) => {
   await page.reload()
   await ready(page, "ses_auto_1")
   expect(data.creates).toHaveLength(1)
+  expect(data.metadataWrites).toBe(1)
+  expect(data.sessions[0]?.metadata).toMatchObject({
+    "opencode.schedulerOwner": "ses_auto_1",
+    "opencode.schedulerBaseURL": `http://127.0.0.1:${process.env.PLAYWRIGHT_SERVER_PORT ?? "4096"}`,
+  })
+})
+
+test("retries coordinator preparation without replacing the persistent chat", async ({ page }) => {
+  const data = state()
+  data.protocol = "v1"
+  data.metadataFailure = true
+  await setup(page, data)
+  await page.goto("/")
+  await expect(page.getByRole("alert")).toContainText("Request failed")
+  expect(data.creates).toEqual(["ses_auto_1"])
+  data.metadataFailure = false
+  await page.getByRole("button", { name: "Continue", exact: true }).click()
+  await ready(page, "ses_auto_1")
+  expect(data.creates).toEqual(["ses_auto_1"])
+  expect(data.sessions[0]?.metadata?.["opencode.schedulerOwner"]).toBe("ses_auto_1")
 })
 
 test("sends to the remembered session, renders streaming replies, and stops execution", async ({ page }) => {

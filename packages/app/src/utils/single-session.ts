@@ -16,6 +16,7 @@ export async function ensureSingleSession(input: {
   write: (id: string) => void
   get: (id: string) => Promise<Session>
   create: () => Promise<Session>
+  prepare?: (id: string) => Promise<void>
 }) {
   const id = input.read()
   const existing = id
@@ -28,9 +29,12 @@ export async function ensureSingleSession(input: {
     !existing.parentID &&
     existing.time.archived === undefined &&
     pathKey(existing.location.directory) === pathKey(input.directory)
-  )
+  ) {
+    await input.prepare?.(existing.id)
     return existing.id
+  }
   const created = await input.create()
   input.write(created.id)
+  await input.prepare?.(created.id)
   return created.id
 }
