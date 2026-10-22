@@ -223,13 +223,22 @@ function makePrompt(input?: { mcpInstructions?: MCP.ServerInstructions[]; proces
   return LayerNode.compile(promptRoot, replacements)
 }
 
-function makeHttp(input?: { mcpInstructions?: MCP.ServerInstructions[]; processor?: "blocking" }) {
+function makeHttp(input?: {
+  mcpInstructions?: MCP.ServerInstructions[]
+  processor?: "blocking"
+  background?: boolean
+}) {
   const root = LayerNode.group([promptRoot, testLLMServerNode])
   const replacements = [
     [SessionSummary.node, summary],
     [LSP.node, lsp],
     [MCP.node, makeMcp(input?.mcpInstructions)],
-    [RuntimeFlags.node, runtimeFlags],
+    [
+      RuntimeFlags.node,
+      input?.background
+        ? RuntimeFlags.layer({ experimentalEventSystem: true, experimentalBackgroundSubagents: true })
+        : runtimeFlags,
+    ],
   ] as const
   if (input?.processor === "blocking") {
     return LayerNode.compile(root, [...replacements, [SessionProcessor.node, blockingProcessor]])
@@ -2469,6 +2478,108 @@ noLLMServer.instance(
       }
     }),
   30_000,
+)
+
+const backgroundDemo = testEffect(makeHttp({ background: true }))
+backgroundDemo.instance("background demo delivers progress before the child completes", () =>
+  Effect.gen(function* () {
+    const instructions = path.resolve(import.meta.dir, "../../examples/background-chat.md")
+    const { llm } = yield* useServerConfig((url) => ({ ...providerCfg(url), instructions: [instructions] }))
+    const prompt = yield* SessionPrompt.Service
+    const sessions = yield* Session.Service
+    const jobs = yield* BackgroundJob.Service
+    const registry = yield* ToolRegistry.Service
+    const chat = yield* sessions.create({
+      title: "まとめ役",
+      permission: [{ permission: "*", pattern: "*", action: "allow" }],
+    })
+    const agents = yield* AgentSvc.Service
+    const build = yield* agents.get("build")
+    const tools = yield* registry.tools({ ...ref, agent: build, sessionID: chat.id })
+    expect(tools.map((tool) => tool.id)).not.toContain("cron")
+    const report = Promise.withResolvers<void>()
+    const finish = Promise.withResolvers<void>()
+    const user = (body: Record<string, unknown>) => {
+      const messages = body.messages as Array<{ role: string; content?: unknown }>
+      return JSON.stringify(messages.findLast((message) => message.role === "user")?.content)
+    }
+    const parent = (hit: { body: Record<string, unknown> }) => user(hit.body).includes("BG_PARENT_DEMO")
+    const child = (hit: { body: Record<string, unknown> }) => user(hit.body).includes("BG_CHILD_DEMO")
+    yield* llm.pushMatch(
+      parent,
+      reply()
+        .tool("task", {
+          description: "Background demo",
+          subagent_type: "general",
+          background: true,
+          prompt: "BG_CHILD_DEMO: report_to_parentで『準備ができました』と途中報告してから作業を続けてください。",
+        })
+        .stop(),
+      reply().text("ACK_VISIBLE: 担当に依頼しました。").stop(),
+    )
+    yield* llm.pushMatch(
+      child,
+      reply().wait(report.promise).tool("report_to_parent", { message: "準備ができました" }).stop(),
+      reply().wait(finish.promise).text("CHILD_DONE").stop(),
+    )
+    yield* llm.textMatch(
+      (hit) => user(hit.body).includes("からの報告"),
+      "PROGRESS_VISIBLE: 準備ができ、作業は続いています。",
+    )
+    yield* llm.textMatch(
+      (hit) => user(hit.body).includes("Background task completed"),
+      "COMPLETION_VISIBLE: 担当の作業が完了しました。",
+    )
+    const first = yield* prompt.prompt({
+      sessionID: chat.id,
+      agent: "build",
+      model: ref,
+      parts: [{ type: "text", text: "BG_PARENT_DEMO: 担当に作業を任せ、途中経過と完了を知らせてください。" }],
+    })
+    expect(first.parts.some((part) => part.type === "text" && part.text.includes("ACK_VISIBLE"))).toBe(true)
+    const worker = (yield* sessions.children(chat.id))[0]!
+    expect((yield* jobs.get(worker.id))?.status).toBe("running")
+    report.resolve()
+    const progress = yield* pollWithTimeout(
+      Effect.gen(function* () {
+        const messages = yield* sessions.messages({ sessionID: chat.id })
+        return messages.some(
+          (message) =>
+            message.info.role === "assistant" &&
+            message.parts.some((part) => part.type === "text" && part.text.includes("PROGRESS_VISIBLE")),
+        )
+          ? true
+          : undefined
+      }),
+      "progress did not reach parent",
+      "10 seconds",
+    )
+    expect(progress).toBe(true)
+    expect((yield* jobs.get(worker.id))?.status).toBe("running")
+    expect(
+      (yield* sessions.messages({ sessionID: worker.id })).some((message) =>
+        message.parts.some((part) => part.type === "text" && part.text.includes("CHILD_DONE")),
+      ),
+    ).toBe(false)
+    finish.resolve()
+    expect((yield* jobs.wait({ id: worker.id, timeout: 10_000 })).info?.status).toBe("completed")
+    yield* pollWithTimeout(
+      Effect.gen(function* () {
+        const messages = yield* sessions.messages({ sessionID: chat.id })
+        return messages.some(
+          (message) =>
+            message.info.role === "assistant" &&
+            message.parts.some((part) => part.type === "text" && part.text.includes("COMPLETION_VISIBLE")),
+        )
+          ? true
+          : undefined
+      }),
+      "completion did not reach parent",
+      "10 seconds",
+    )
+    expect((yield* llm.inputs).some((input) => JSON.stringify(input.messages).includes("background=true"))).toBe(true)
+    expect(yield* llm.misses).toEqual([])
+  }),
 )
 
 it.instance("persistent chat request invokes cron and durably registers a child schedule", () =>

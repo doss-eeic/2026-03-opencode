@@ -10,6 +10,7 @@ import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
 import { ReadTool } from "./read"
 import { TaskTool } from "./task"
+import { ReportToParentTool } from "./report-to-parent"
 import { CronTool } from "./cron"
 import { ScheduleRegistration } from "@/schedule/registration"
 import { SessionID } from "@/session/schema"
@@ -104,6 +105,7 @@ const layer = Layer.effect(
 
     const invalid = yield* InvalidTool
     const task = yield* TaskTool
+    const reportToParent = yield* ReportToParentTool
     const cron = yield* CronTool
     const sessions = yield* Session.Service
     const read = yield* ReadTool
@@ -222,6 +224,7 @@ const layer = Layer.effect(
           write: Tool.init(writetool),
           task: Tool.init(task),
           cron: Tool.init(cron),
+          reportToParent: Tool.init(reportToParent),
           fetch: Tool.init(webfetch),
           todo: Tool.init(todo),
           search: Tool.init(websearch),
@@ -246,6 +249,7 @@ const layer = Layer.effect(
             tool.write,
             tool.task,
             tool.cron,
+            tool.reportToParent,
             tool.fetch,
             tool.todo,
             tool.search,
