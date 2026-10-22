@@ -60,8 +60,17 @@ describe("schedule input contract", () => {
     expect(RecurrenceRule.safeParse({ ...recurrence, timezone }).success).toBe(true)
   })
 
-  test("rejects blank RRULEs without pretending to implement a recurrence engine", () => {
-    expect(RecurrenceRule.safeParse({ ...recurrence, rrule: " \n" }).success).toBe(false)
+  test.each([" \n", "every day at 7", "FREQ=DAILY;FOO=1", "BYHOUR=7"])(
+    "rejects an unusable RRULE and shows the expected format: %j",
+    (rrule) => {
+      const result = RecurrenceRule.safeParse({ ...recurrence, rrule })
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toContain("FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0")
+    },
+  )
+
+  test("accepts a valid RRULE", () => {
+    expect(RecurrenceRule.safeParse({ ...recurrence, rrule: "FREQ=WEEKLY;BYDAY=MO,WE;BYHOUR=9" }).success).toBe(true)
   })
 })
 

@@ -78,7 +78,12 @@ const layer = Layer.effect(
       yield* Effect.forEach(
         results.filter((result) => result.due),
         (result) =>
-          Effect.tryPromise(() => sendPrompt(result.registration)).pipe(
+          Effect.tryPromise(() =>
+            sendPrompt({
+              ...result.registration,
+              text: `${result.registration.text}\n\n結果は report_to_parent で報告してください。`,
+            }),
+          ).pipe(
             Effect.catchCause((cause) =>
               Effect.logError("scheduled prompt failed", { id: result.registration.id, cause: Cause.pretty(cause) }),
             ),

@@ -1,4 +1,5 @@
 import z from "zod"
+import { RRule } from "rrule"
 
 const id = z.string().regex(/\S/, "ID must not be blank")
 const text = z.string().regex(/\S/, "text must not be blank")
@@ -15,14 +16,19 @@ export const SendConfig = z
 
 export type SendConfig = z.infer<typeof SendConfig>
 
+const RRULE_FORMAT =
+  'Use an RFC 5545 RRULE value, for example "FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0" or "FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=30;BYSECOND=0"'
+
 export const RecurrenceRule = z
   .object({
     dtstart: z.iso
       .datetime({ local: true, precision: 0 })
       .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00$/, "Use local YYYY-MM-DDTHH:mm:00 without an offset"),
     timezone: z.string().refine(isTimeZone, "Use an IANA time zone, for example Asia/Tokyo"),
-    // The recurrence engine must parse RFC 5545 before accepting a schedule.
-    rrule: z.string().regex(/\S/, "rrule must not be blank"),
+    rrule: z.string().superRefine((value, ctx) => {
+      const problem = rruleProblem(value)
+      if (problem) ctx.addIssue({ code: "custom", message: `${problem}. ${RRULE_FORMAT}` })
+    }),
   })
   .strict()
 
@@ -81,5 +87,22 @@ function isTimeZone(value: string) {
     return true
   } catch {
     return false
+  }
+}
+
+function rruleProblem(value: string) {
+  if (!/\S/.test(value)) return "rrule must not be blank"
+  const options = parseRRule(value)
+  if (!options) return `Could not parse rrule "${value}"`
+  if (options.freq === undefined || options.freq === null) return "rrule must include FREQ"
+}
+
+function parseRRule(value: string) {
+  try {
+    const options = RRule.parseString(value)
+    new RRule({ ...options, dtstart: new Date(0) })
+    return options
+  } catch {
+    return undefined
   }
 }
