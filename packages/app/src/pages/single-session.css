@@ -1,0 +1,305 @@
+/* Keep the mascot theme local to the browser's single-session chat. */
+[data-component="single-session"] {
+  --cat-paper: light-dark(#fff8eb, #241d1b);
+  --cat-surface: light-dark(#fffef9, #302623);
+  --cat-soft: light-dark(#ffedc9, #443327);
+  --cat-ink: light-dark(#49322b, #fae9d2);
+  --cat-muted: light-dark(#806d60, #c4aa96);
+  --cat-line: light-dark(#ddc5a7, #69503f);
+  --cat-accent: light-dark(#b9432e, #f4a184);
+  --cat-shadow: light-dark(#79513014, #00000030);
+  --cat-gold: #efbc49;
+  --background-base: var(--cat-paper);
+  --background-weak: var(--cat-soft);
+  --background-strong: var(--cat-surface);
+  --background-stronger: var(--cat-paper);
+  --surface-raised-stronger-non-alpha: var(--cat-surface);
+  --surface-base-hover: var(--cat-soft);
+  --surface-base-active: var(--cat-soft);
+  --text-base: var(--cat-ink);
+  --text-strong: var(--cat-ink);
+  --text-weak: var(--cat-muted);
+  --text-weaker: var(--cat-muted);
+  --text-interactive-base: var(--cat-accent);
+  --text-link-base: var(--cat-accent);
+  --icon-base: var(--cat-ink);
+  --border-weak-base: var(--cat-line);
+  --border-weaker-base: var(--cat-line);
+  --button-secondary-base: var(--cat-surface);
+  --button-secondary-hover: var(--cat-soft);
+  --v2-background-bg-base: var(--cat-paper);
+  --v2-background-bg-layer-01: var(--cat-surface);
+  --v2-background-bg-layer-02: var(--cat-soft);
+  --v2-background-bg-button-neutral: var(--cat-surface);
+  --v2-text-text-base: var(--cat-ink);
+  --v2-text-text-muted: var(--cat-muted);
+  --v2-text-text-faint: var(--cat-muted);
+  --v2-text-text-accent: var(--cat-accent);
+  --v2-icon-icon-base: var(--cat-ink);
+  --v2-icon-icon-muted: var(--cat-muted);
+  --v2-icon-icon-accent: var(--cat-accent);
+  --v2-border-border-base: var(--cat-line);
+  --v2-border-border-muted: var(--cat-line);
+  --v2-border-border-focus: var(--cat-accent);
+  --font-family-sans: "Avenir Next", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  --font-family-text: var(--font-family-sans);
+  font-family: var(--font-family-sans);
+  color: var(--cat-ink);
+  background-color: var(--cat-paper);
+  background-image: radial-gradient(var(--cat-line) 0.65px, transparent 0.65px);
+  background-size: 18px 18px;
+
+  [data-component="session-panel"] {
+    background-color: var(--cat-paper);
+    background-image: radial-gradient(var(--cat-line) 0.65px, transparent 0.65px);
+    background-size: 18px 18px;
+    box-shadow: none;
+  }
+
+  [data-timeline-row="UserMessage"] {
+    padding-top: 12px;
+  }
+
+  [data-slot="user-message-text"] {
+    padding: 13px 18px;
+    border: 1.5px solid var(--cat-line);
+    border-radius: 20px 20px 5px 20px;
+    background: var(--cat-soft);
+    box-shadow: 2px 3px 0 var(--cat-shadow);
+    line-height: 1.75;
+  }
+
+  [data-component="text-part"] {
+    position: relative;
+    margin-top: 16px;
+    padding-inline-start: 66px;
+    min-height: 58px;
+
+    /* Decorative portrait: the adjacent response supplies the accessible content. */
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: 0;
+      top: 0;
+      width: 52px;
+      height: 52px;
+      border: 1.5px solid var(--cat-line);
+      border-radius: 18px;
+      background: var(--cat-soft) url("../assets/akamon-cat.png") center / 58px no-repeat;
+      box-shadow: 2px 3px 0 var(--cat-shadow);
+      pointer-events: none;
+    }
+  }
+
+  [data-slot="text-part-body"] {
+    padding: 16px 20px;
+    border: 1.5px solid var(--cat-line);
+    border-radius: 5px 22px 22px;
+    background: var(--cat-surface);
+    box-shadow: 3px 4px 0 var(--cat-shadow);
+    overflow-wrap: anywhere;
+    line-height: 1.8;
+  }
+
+  [data-slot="text-part-body"] [data-component="markdown"] {
+    line-height: 1.8;
+  }
+
+  [data-slot="text-part-copy-wrapper"] {
+    margin-top: 8px;
+  }
+
+  [data-component="session-prompt-dock"] {
+    background: linear-gradient(transparent, var(--cat-paper) 20px);
+    padding-top: 22px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  [data-dock-surface="shell"],
+  [data-component="prompt-input-v2"] {
+    border: 1.5px solid var(--cat-line);
+    border-radius: 22px;
+    background: var(--cat-surface);
+    box-shadow: 3px 4px 0 var(--cat-shadow);
+
+    &:focus-within {
+      border-color: var(--cat-accent);
+      box-shadow:
+        3px 4px 0 var(--cat-shadow),
+        0 0 0 3px color-mix(in srgb, var(--cat-accent) 12%, transparent);
+    }
+  }
+
+  [data-component="prompt-input"] {
+    caret-color: var(--cat-accent);
+  }
+
+  [data-action="prompt-submit"] {
+    --v2-background-bg-contrast: #b9432e;
+    --icon-invert-base: #fff8eb;
+    border-radius: 12px;
+    background: #b9432e;
+    color: #fff8eb;
+    box-shadow: 0 2px 0 #7e2b1e;
+
+    &:hover:not(:disabled) {
+      --v2-background-bg-contrast: #9c3525;
+      background: #9c3525;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      box-shadow: none;
+    }
+
+    [data-slot="icon-svg"] {
+      color: inherit;
+    }
+  }
+
+  :is(button, [role="button"], a):focus-visible {
+    outline: 2px solid var(--cat-accent);
+    outline-offset: 3px;
+  }
+}
+
+[data-component="akamon-header"] {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px max(24px, calc((100% - 1000px) / 2));
+  border-top: 4px solid #b9432e;
+  border-bottom: 1.5px solid var(--cat-line);
+  background: var(--cat-surface);
+  box-shadow: 0 4px 0 var(--cat-shadow);
+  z-index: 1;
+
+  .akamon-header-identity {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  img {
+    width: 72px;
+    height: 72px;
+    flex: none;
+    object-fit: contain;
+  }
+
+  .akamon-header-titles {
+    min-width: 0;
+  }
+
+  .akamon-header-name {
+    display: block;
+    width: fit-content;
+    margin-bottom: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: var(--cat-ink);
+    background: var(--cat-soft);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  [data-component="button"] {
+    flex-shrink: 0;
+    height: 36px;
+    padding-inline: 14px;
+    border: 1.5px solid var(--cat-line);
+    border-radius: 12px;
+    background: var(--cat-surface);
+    box-shadow: 2px 2px 0 var(--cat-shadow);
+  }
+}
+
+[data-component="akamon-welcome"] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+
+  img {
+    width: clamp(100px, 22vh, 180px);
+    height: clamp(100px, 22vh, 180px);
+    object-fit: contain;
+  }
+
+  h2 {
+    font-size: clamp(18px, 3vw, 24px);
+    font-weight: 700;
+  }
+
+  p {
+    color: var(--cat-muted);
+    font-size: 14px;
+    max-width: 32ch;
+  }
+}
+
+@media (max-width: 640px) {
+  [data-component="akamon-header"] {
+    padding: 8px 14px;
+    gap: 8px;
+
+    img {
+      width: 54px;
+      height: 54px;
+    }
+
+    .akamon-header-identity {
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: 15px;
+    }
+
+    [data-component="button"] {
+      padding-inline: 10px;
+      font-size: 12px;
+    }
+  }
+
+  [data-component="single-session"] {
+    [data-component="text-part"] {
+      padding-inline-start: 46px;
+
+      &::before {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background-size: 42px;
+      }
+    }
+
+    [data-slot="text-part-body"] {
+      padding: 12px 14px;
+      border-radius: 5px 18px 18px;
+    }
+
+    [data-slot="user-message-text"] {
+      padding: 11px 14px;
+    }
+  }
+}
