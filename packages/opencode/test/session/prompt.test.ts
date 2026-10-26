@@ -2582,7 +2582,7 @@ backgroundDemo.instance("background demo delivers progress before the child comp
   }),
 )
 
-it.instance("persistent chat request invokes cron and durably registers a child schedule", () =>
+it.instance("persistent chat request invokes cron_create without an ID and durably registers a child schedule", () =>
   Effect.gen(function* () {
     const { llm } = yield* useServerConfig(providerCfg)
     const sessions = yield* Session.Service
@@ -2590,7 +2590,10 @@ it.instance("persistent chat request invokes cron and durably registers a child 
     const registrations = yield* ScheduleRegistration.Service
     const session = yield* sessions.create({
       title: "まとめ役",
-      permission: [{ permission: "*", pattern: "*", action: "allow" }],
+      permission: [
+        { permission: "*", pattern: "*", action: "deny" },
+        { permission: "cron", pattern: "*", action: "allow" },
+      ],
     })
     yield* sessions.setMetadata({
       sessionID: session.id,
@@ -2603,10 +2606,7 @@ it.instance("persistent chat request invokes cron and durably registers a child 
     const child = yield* sessions.create({ parentID: session.id, title: "毎朝の天気" })
     yield* llm.push(
       reply()
-        .tool("cron", {
-          action: "create",
-          id: "daily-weather",
-          enabled: true,
+        .tool("cron_create", {
           sessionID: child.id,
           text: "雨が降るなら教えて",
           recurrenceRules: [
@@ -2619,7 +2619,7 @@ it.instance("persistent chat request invokes cron and durably registers a child 
         })
         .stop(),
     )
-    yield* llm.text("設定を保存しました。時刻による自動送信はまだ実装されていません。")
+    yield* llm.text("毎朝7時の設定を保存しました。")
     const result = yield* prompt.prompt({
       sessionID: session.id,
       agent: "build",
@@ -2631,6 +2631,8 @@ it.instance("persistent chat request invokes cron and durably registers a child 
     expect(rows[0]?.sessionID).toBe(child.id)
     expect(rows[0]?.text).toBe("雨が降るなら教えて")
     expect(result.parts.some((part) => part.type === "text" && part.text.includes("保存しました"))).toBe(true)
-    yield* registrations.execute(session.id, { action: "delete", id: "daily-weather", revision: 1 })
+    expect(rows[0]?.id).toMatch(new RegExp(`^${session.id}:cron-`))
+    expect(rows[0]?.enabled).toBe(true)
+    yield* registrations.execute(session.id, { action: "delete", id: rows[0].id, revision: 1 })
   }),
 )

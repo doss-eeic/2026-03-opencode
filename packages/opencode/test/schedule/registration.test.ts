@@ -12,6 +12,8 @@ import { ScheduleRegistration } from "@/schedule/registration"
 import { ToolRegistry } from "@/tool/registry"
 import { ModelV2 } from "@opencode-ai/core/model"
 import { ProviderV2 } from "@opencode-ai/core/provider"
+import { MessageID, SessionID } from "@/session/schema"
+import { Tool } from "@/tool/tool"
 import { disposeAllInstances } from "../fixture/fixture"
 import { testEffect } from "../lib/effect"
 
@@ -145,14 +147,94 @@ it.instance("hides cron from ordinary sessions, children, forks, and calls with 
         sessionID,
       })
       expect(tools.some((tool) => tool.id === "cron")).toBe(sessionID === owner.id)
+      expect(tools.some((tool) => tool.id === "cron_create")).toBe(sessionID === owner.id)
       if (sessionID === owner.id) {
         const schema = tools.find((tool) => tool.id === "cron")?.jsonSchema
         expect(schema?.type).toBe("object")
         expect(schema?.required).toEqual(["action"])
+        const create = tools.find((tool) => tool.id === "cron_create")?.jsonSchema
+        expect(create?.type).toBe("object")
+        expect(create?.required).toEqual(["sessionID", "text", "recurrenceRules"])
+        expect(create?.properties).not.toHaveProperty("id")
+        expect(create?.properties).not.toHaveProperty("action")
       }
       if (sessionID && sessionID !== owner.id)
         expect(Exit.isFailure(yield* service.execute(sessionID, { action: "list" }).pipe(Effect.exit))).toBe(true)
     }
+  }),
+)
+
+function context(sessionID: SessionID): Tool.Context {
+  return {
+    sessionID,
+    messageID: MessageID.ascending(),
+    callID: "call-create-schedule",
+    agent: "build",
+    abort: new AbortController().signal,
+    messages: [],
+    metadata: () => Effect.void,
+    ask: (input) => {
+      expect(input.permission).toBe("cron")
+      expect(input.patterns).toEqual(["create"])
+      return Effect.void
+    },
+  }
+}
+
+it.instance("creates without a model-supplied ID and prevents duplicate same-call retries", () =>
+  Effect.gen(function* () {
+    const { owner, child, input, file } = yield* seed()
+    const agents = yield* Agent.Service
+    const registry = yield* ToolRegistry.Service
+    const agent = yield* agents.get("build")
+    const tools = yield* registry.tools({
+      providerID: ProviderV2.ID.make("test"),
+      modelID: ModelV2.ID.make("test"),
+      agent,
+      sessionID: owner.id,
+    })
+    const tool = tools.find((tool) => tool.id === "cron_create")!
+    const args = { sessionID: child.id, text: input.text, recurrenceRules: input.recurrenceRules }
+    const ctx = context(owner.id)
+    const result = yield* tool.execute(args, ctx)
+    const created = JSON.parse(result.output).records[0]
+    expect(created.id).toMatch(new RegExp(`^${owner.id}:cron-[a-f0-9]{24}$`))
+    expect(created.enabled).toBe(true)
+    expect(created.sessionID).toBe(child.id)
+    const fs = yield* FSUtil.Service
+    expect(yield* fs.readJson(file)).toEqual([created])
+    expect(Exit.isFailure(yield* tool.execute(args, ctx).pipe(Effect.exit))).toBe(true)
+    expect(Exit.isFailure(yield* tool.execute({ ...args, text: "changed" }, ctx).pipe(Effect.exit))).toBe(true)
+    expect(yield* fs.readJson(file)).toEqual([created])
+  }),
+)
+
+it.instance("accepts legacy cron.create without an ID but rejects missing target fields", () =>
+  Effect.gen(function* () {
+    const { owner, child, input } = yield* seed()
+    const agents = yield* Agent.Service
+    const registry = yield* ToolRegistry.Service
+    const tools = yield* registry.tools({
+      providerID: ProviderV2.ID.make("test"),
+      modelID: ModelV2.ID.make("test"),
+      agent: yield* agents.get("build"),
+      sessionID: owner.id,
+    })
+    const legacy = tools.find((tool) => tool.id === "cron")!
+    const create = tools.find((tool) => tool.id === "cron_create")!
+    const args = { sessionID: child.id, text: input.text, recurrenceRules: input.recurrenceRules }
+    for (const field of ["sessionID", "text", "recurrenceRules"]) {
+      const invalid = Object.fromEntries(Object.entries(args).filter(([key]) => key !== field))
+      const ctx = { ...context(owner.id), ask: () => Effect.die("invalid calls must not request permission") }
+      const result = yield* create.execute(invalid, ctx).pipe(Effect.exit)
+      expect(Exit.isFailure(result)).toBe(true)
+    }
+    const result = yield* legacy.execute({ ...args, action: "create" }, context(owner.id))
+    const created = JSON.parse(result.output).records[0]
+    expect(created.id).toMatch(new RegExp(`^${owner.id}:cron-`))
+    expect(created.sessionID).toBe(child.id)
+    const service = yield* ScheduleRegistration.Service
+    expect(yield* service.execute(owner.id, { action: "list" })).toHaveLength(1)
   }),
 )
 

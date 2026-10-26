@@ -23,6 +23,8 @@ export const Registration = ScheduleConfig.extend({
 export type Registration = z.infer<typeof Registration>
 
 const fields = ScheduleConfig.omit({ baseURL: true, id: true })
+export const CreateInput = fields.extend({ enabled: z.boolean().default(true) }).strict()
+
 export const Input = z.discriminatedUnion("action", [
   fields.extend({ action: z.literal("create"), id: z.string().regex(/\S/), enabled: z.boolean().default(true) }),
   z.object({ action: z.literal("list") }).strict(),
@@ -38,6 +40,14 @@ export const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("delete"), id: z.string().regex(/\S/), revision: z.number().int().positive() }).strict(),
 ])
 export type Input = z.infer<typeof Input>
+
+// Older conversations may still call cron.create without an ID. Generate that
+// internal identifier in the tool rather than asking the model to invent it.
+export const CronInput = z.union([
+  CreateInput.extend({ action: z.literal("create"), id: z.string().regex(/\S/).optional() }),
+  Input,
+])
+export type CronInput = z.infer<typeof CronInput>
 
 // Providers require an object at the root of a function schema. The discriminated
 // union above remains the runtime validator for action-specific required fields.

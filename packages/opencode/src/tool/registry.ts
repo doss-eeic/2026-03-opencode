@@ -11,7 +11,7 @@ import { GrepTool } from "./grep"
 import { ReadTool } from "./read"
 import { TaskTool } from "./task"
 import { ReportToParentTool } from "./report-to-parent"
-import { CronTool } from "./cron"
+import { CronCreateTool, CronTool } from "./cron"
 import { ScheduleRegistration } from "@/schedule/registration"
 import { SessionID } from "@/session/schema"
 import { Database } from "@opencode-ai/core/database/database"
@@ -107,6 +107,7 @@ const layer = Layer.effect(
     const task = yield* TaskTool
     const reportToParent = yield* ReportToParentTool
     const cron = yield* CronTool
+    const cronCreate = yield* CronCreateTool
     const sessions = yield* Session.Service
     const read = yield* ReadTool
     const question = yield* QuestionTool
@@ -224,6 +225,7 @@ const layer = Layer.effect(
           write: Tool.init(writetool),
           task: Tool.init(task),
           cron: Tool.init(cron),
+          cronCreate: Tool.init(cronCreate),
           reportToParent: Tool.init(reportToParent),
           fetch: Tool.init(webfetch),
           todo: Tool.init(todo),
@@ -249,6 +251,7 @@ const layer = Layer.effect(
             tool.write,
             tool.task,
             tool.cron,
+            tool.cronCreate,
             tool.reportToParent,
             tool.fetch,
             tool.todo,
@@ -305,7 +308,8 @@ const layer = Layer.effect(
         ? yield* sessions.get(input.sessionID).pipe(Effect.catch(() => Effect.succeed(undefined)))
         : undefined
       const filtered = (yield* all()).filter((tool) => {
-        if (tool.id === CronTool.id) return owner !== undefined && ScheduleRegistration.isOwner(owner)
+        if (tool.id === CronTool.id || tool.id === CronCreateTool.id)
+          return owner !== undefined && ScheduleRegistration.isOwner(owner)
         if (tool.id === WebSearchTool.id) {
           return webSearchEnabled(input.providerID, { exa: flags.enableExa, parallel: flags.enableParallel })
         }
@@ -340,7 +344,7 @@ const layer = Layer.effect(
             id: tool.id,
             description: [
               output.description,
-              tool.id === CronTool.id
+              tool.id === CronTool.id || tool.id === CronCreateTool.id
                 ? `Current UTC time: ${new Date().toISOString()}. User timezone: ${owner?.metadata?.[ScheduleRegistration.TimezoneKey] ?? "unknown; ask the user"}.`
                 : undefined,
               tool.id === TaskTool.id ? yield* describeTask(input.agent) : undefined,
