@@ -449,6 +449,17 @@ test("evaluate - merges multiple rulesets", () => {
 
 // disabled tests
 
+test("disabled - cron_create uses the existing cron permission", () => {
+  const tools = ["cron", "cron_create"]
+  expect(
+    Permission.disabled(tools, [
+      { permission: "*", pattern: "*", action: "deny" },
+      { permission: "cron", pattern: "*", action: "allow" },
+    ]),
+  ).toEqual(new Set())
+  expect(Permission.disabled(tools, [{ permission: "cron", pattern: "*", action: "deny" }])).toEqual(new Set(tools))
+})
+
 test("disabled - returns empty set when all tools allowed", () => {
   const result = Permission.disabled(["bash", "edit", "read"], [{ permission: "*", pattern: "*", action: "allow" }])
   expect(result.size).toBe(0)
